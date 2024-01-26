@@ -1,0 +1,79 @@
+import gmshapi
+import meshtools 
+import plot 
+
+class GmshLoader {
+    init(...varg) {
+        if (gmshIsInitialized()==0) gmshInitialize(0,0,0)
+        if (varg.count()==1) {
+            print "Opening file ${varg[0]}..."
+            gmshOpen(varg[0])
+        }
+    }
+    launch() {
+        gmshFltkRun()
+    }
+    buildMorphoMesh() {
+
+        var out = gmshModelMeshGetNodes(-1, //const int dim,
+                            -1, //const int tag,
+                            0, // const int includeBoundary,
+                            0 // const int returnParametricCoord,
+                            );
+        
+        var nodeTags = out[0]
+        var nv = nodeTags.count()
+        var coords = out[1]
+        var coordMat = Matrix(coords)
+        coordMat.reshape(3, nv)
+        var mb = MeshBuilder()
+        for (i in 0...nv) {
+            mb.addvertex(coordMat.column(i))
+        }
+        var tetrahedronType = gmshModelMeshGetElementType("Tetrahedron", 1, 0)
+
+        var triangleType = gmshModelMeshGetElementType("Triangle", 1, 0)
+        
+        var lineType = gmshModelMeshGetElementType("Line", 1, 0)
+
+        var tets = gmshModelMeshGetElementsByType(tetrahedronType, -1, 0, 1)
+        var tris = gmshModelMeshGetElementsByType(triangleType, -1, 0, 1)
+        var lines = gmshModelMeshGetElementsByType(lineType, -1, 0, 1)
+        var tetTags = tets[0]
+        var triTags = tris[0]
+        var lineTags = lines[0]
+
+        var nTets = tetTags.count()
+        var nTris = triTags.count()
+        var nLines = lineTags.count()
+        if (nTets>0) {
+            var tetNodeTags = Matrix(tets[1])
+            tetNodeTags.reshape(4,nTets)
+            for (i in 0...nTets) {
+                mb.addvolume(tetNodeTags.column(i) - 1) // Subtracting 1 since Morpho ids are 0-indexed and gmsh ones are 1-indexed
+            }
+        } else if (nTris>0) {
+            var triNodeTags = Matrix(tris[1])
+            triNodeTags.reshape(3,nTris)
+            for (i in 0...nTris) {
+                mb.addface(triNodeTags.column(i) - 1) // Subtracting 1 since Morpho ids are 0-indexed and gmsh ones are 1-indexed
+            }
+        } else if (nLines>0) {
+            var lineNodeTags = Matrix(lines[1])
+            lineNodeTags.reshape(2,nLines)
+            for (i in 0...nLines) {
+                mb.addedge(lineNodeTags.column(i) - 1) // Subtracting 1 since Morpho ids are 0-indexed and gmsh ones are 1-indexed
+            }
+        }
+        var m = mb.build()
+        m.addgrade(1)
+        return m
+        
+    }
+
+    exportToMorpho(filename) {
+        var m = self.buildMorphoMesh()
+        m.save(filename)
+    }
+
+}

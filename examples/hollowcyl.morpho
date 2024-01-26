@@ -1,0 +1,17 @@
+import gmsh
+import gmshapi
+import constants
+import plot 
+
+gmshInitialize(0,0,0)
+var lc = 0.3;
+var h = 2
+var circ = gmshModelOccAddCircle(0,0,-h/2, 1, -1,-2*Pi, 2*Pi, [0, 0, 1], [1, 0, 0])
+var ext1 = gmshModelOccExtrude([(1,circ)], 0, 0, h, [], [], -1)
+gmshModelOccSynchronize()
+gmshOptionSetNumber("Mesh.MeshSizeMax", 0.2)
+gmshModelMeshGenerate(2)
+var m = GmshLoader().buildMorphoMesh()
+m.save("cylinder_h_${h}.mesh")
+Show(plotmesh(m, grade=1))
+gmshFinalize()

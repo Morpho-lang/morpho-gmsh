@@ -1,0 +1,7 @@
+import gmsh
+
+var gm = GmshLoader("t1.msh")
+gm.launch()
+// You can now modify the mesh through the Gmsh GUI, and then close it. 
+// The following code will run *after* that, thus saving the modified mesh.
+gm.exportToMorpho("t1Modified.mesh")

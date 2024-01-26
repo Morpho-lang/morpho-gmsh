@@ -1,0 +1,4 @@
+import gmshapi 
+gmshInitialize(0,0,0)
+print(gmshIsInitialized())
+gmshFinalize()

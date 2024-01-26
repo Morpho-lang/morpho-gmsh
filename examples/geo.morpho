@@ -1,0 +1,26 @@
+import gmshapi 
+import plot 
+
+gmshInitialize(0,0,0)
+print gmshModelGetCurrent()
+var lc = 2e-1; // Size of the mesh around a point
+var p1 = gmshModelGeoAddPoint(-1, -1, 0, lc, -1)
+var p2 = gmshModelGeoAddPoint(-1, 1,  0, lc, -1)
+var p3 = gmshModelGeoAddPoint(1, 1,  0, lc, -1)
+var p4 = gmshModelGeoAddPoint(1, -1,  0, lc/10, -1)
+
+var l1 = gmshModelGeoAddLine(1, 2, 1);
+var l2 = gmshModelGeoAddLine(3, 2, 2);
+var l3 = gmshModelGeoAddLine(3, p4, 3);
+var l4 = gmshModelGeoAddLine(p4, 1, 4);
+
+var cl1 = [4, 1, -2, 3];
+var out = gmshModelGeoAddCurveLoop(cl1, 1, 0);
+// print out
+var s1 = [1]
+out = gmshModelGeoAddPlaneSurface(s1, 1);
+
+gmshModelGeoSynchronize()
+gmshModelMeshGenerate(2)
+gmshFltkRun()
+gmshFinalize()

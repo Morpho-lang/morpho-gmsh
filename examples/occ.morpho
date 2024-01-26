@@ -1,0 +1,20 @@
+import gmsh
+import gmshapi
+import constants
+import plot 
+
+gmshInitialize(0,0,0)
+print gmshModelGetCurrent()
+var coneHeight = 1
+var coneRadius = 1
+var cylHeight = 1
+var coneTag = gmshModelOccAddCone(0,0,0, 0,0,coneHeight, coneRadius,0, -1, 2*Pi)
+var cylTag = gmshModelOccAddCylinder(0,0,0,0,0,-cylHeight, 1, -1, 2*Pi)
+gmshModelOccFuse([(3, coneTag)], [(3, cylTag)], -1, -1, -1)
+gmshModelOccSynchronize()
+gmshOptionSetNumber("Mesh.MeshSizeMin", 0.3)
+gmshOptionSetNumber("Mesh.MeshSizeMax", 0.5)
+gmshModelMeshGenerate(3)
+var m = GmshLoader().buildMorphoMesh()
+Show(plotmesh(m, grade=1))
+gmshFinalize()
