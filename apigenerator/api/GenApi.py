@@ -196,7 +196,7 @@ class ivectorstring(ivectorint):
         self.c = "const char * const * " + self.name + ", const size_t " + self.name + "_n"
         self.morpho = self.name + f", {self.name}_len"
         self.texi_type = "vector of strings"
-        self.inputListType = "char *"
+        self.inputListType = "char const *"
         self.toListFunction = "morphoGetCharStarStarFromList"
 
 # Now we begin the vector of vector inputs, that will require yet another `capture_input` methods.
@@ -607,7 +607,7 @@ cmorpho_helpers += func_convert_list_to_pointer_array("morphoGetDoubleStarFromLi
                                                       "morpho_get_double")
 
 cmorpho_helpers += func_convert_list_to_pointer_array("morphoGetCharStarStarFromList",
-                                                      "char **", 
+                                                      "char const **", 
                                                       "MORPHO_ISSTRING", 
                                                       "MORPHO_GETCSTRING")
 

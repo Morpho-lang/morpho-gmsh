@@ -84,7 +84,7 @@ void morphoGetDoubleStarFromList(vm* v, objectlist* l, double * list) {
 
 }
 
-void morphoGetCharStarStarFromList(vm* v, objectlist* l, char ** list) {
+void morphoGetCharStarStarFromList(vm* v, objectlist* l, char const ** list) {
     int len = list_length(l);
     bool success = true;
     value elementI;
@@ -1619,7 +1619,7 @@ value MorphoGmshModelSetAttribute(vm* v, int nargs, value* args) {
     if (!MORPHO_ISLIST(MORPHO_GETARG(args, 1))) {morpho_runtimeerror(v, GMSH_ARGS_ERROR); return MORPHO_NIL; }
     objectlist* values_list = MORPHO_GETLIST(MORPHO_GETARG(args, 1)); 
     int values_len = list_length(values_list); 
-    char * values[values_len]; 
+    char const * values[values_len]; 
     morphoGetCharStarStarFromList(v, values_list, values); 
     int ierr;
     gmshModelSetAttribute(name,
@@ -5394,7 +5394,7 @@ value MorphoGmshModelGeoAddGeometry(vm* v, int nargs, value* args) {
     if (!MORPHO_ISLIST(MORPHO_GETARG(args, 2))) {morpho_runtimeerror(v, GMSH_ARGS_ERROR); return MORPHO_NIL; }
     objectlist* strings_list = MORPHO_GETLIST(MORPHO_GETARG(args, 2)); 
     int strings_len = list_length(strings_list); 
-    char * strings[strings_len]; 
+    char const * strings[strings_len]; 
     morphoGetCharStarStarFromList(v, strings_list, strings); 
     if (!MORPHO_ISINTEGER(MORPHO_GETARG(args, 3)))  {morpho_runtimeerror(v, GMSH_ARGS_ERROR); return MORPHO_NIL; }
     const int tag = MORPHO_GETINTEGERVALUE(MORPHO_GETARG(args, 3)); 
@@ -8656,12 +8656,12 @@ value MorphoGmshViewAddListDataString(vm* v, int nargs, value* args) {
     if (!MORPHO_ISLIST(MORPHO_GETARG(args, 2))) {morpho_runtimeerror(v, GMSH_ARGS_ERROR); return MORPHO_NIL; }
     objectlist* data_list = MORPHO_GETLIST(MORPHO_GETARG(args, 2)); 
     int data_len = list_length(data_list); 
-    char * data[data_len]; 
+    char const * data[data_len]; 
     morphoGetCharStarStarFromList(v, data_list, data); 
     if (!MORPHO_ISLIST(MORPHO_GETARG(args, 3))) {morpho_runtimeerror(v, GMSH_ARGS_ERROR); return MORPHO_NIL; }
     objectlist* style_list = MORPHO_GETLIST(MORPHO_GETARG(args, 3)); 
     int style_len = list_length(style_list); 
-    char * style[style_len]; 
+    char const * style[style_len]; 
     morphoGetCharStarStarFromList(v, style_list, style); 
     int ierr;
     gmshViewAddListDataString(tag,
@@ -9293,7 +9293,7 @@ value MorphoGmshParserSetString(vm* v, int nargs, value* args) {
     if (!MORPHO_ISLIST(MORPHO_GETARG(args, 1))) {morpho_runtimeerror(v, GMSH_ARGS_ERROR); return MORPHO_NIL; }
     objectlist* cvalue_list = MORPHO_GETLIST(MORPHO_GETARG(args, 1)); 
     int cvalue_len = list_length(cvalue_list); 
-    char * cvalue[cvalue_len]; 
+    char const * cvalue[cvalue_len]; 
     morphoGetCharStarStarFromList(v, cvalue_list, cvalue); 
     int ierr;
     gmshParserSetString(name,
@@ -9476,7 +9476,7 @@ value MorphoGmshOnelabSetString(vm* v, int nargs, value* args) {
     if (!MORPHO_ISLIST(MORPHO_GETARG(args, 1))) {morpho_runtimeerror(v, GMSH_ARGS_ERROR); return MORPHO_NIL; }
     objectlist* cvalue_list = MORPHO_GETLIST(MORPHO_GETARG(args, 1)); 
     int cvalue_len = list_length(cvalue_list); 
-    char * cvalue[cvalue_len]; 
+    char const * cvalue[cvalue_len]; 
     morphoGetCharStarStarFromList(v, cvalue_list, cvalue); 
     int ierr;
     gmshOnelabSetString(name,

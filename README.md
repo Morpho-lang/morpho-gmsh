@@ -24,8 +24,13 @@ Morpho bindings for the Gmsh API
     cmake -DCMAKE_BUILD_TYPE=Release ..
     make install
 
-6\. Try out the test example
+6\. Add the `morpho-gmsh` directory to `~/.morphopackages`
 
-    cd ../examples
+    cd ../
+    pwd >> ~/.morphopackages
+
+7\. Try out the test example
+
+    cd examples
     morpho6 testgmshapi.morpho
 
