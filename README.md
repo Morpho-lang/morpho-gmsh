@@ -15,6 +15,14 @@ Morpho bindings for the Gmsh API
 
 3\. In [apigenerator/generate.py](./apigenerator/generate.py), set the correct version of gmsh that you have downloaded, and run the file.
 
+This download `apigenerator/CMakeLists.txt` (the Gmsh CMakeLists file) and `apigenerator/api/gen.py`. In addition, it should generate 3 files:
+
+* `src/gmshapi.c` (already shipped with this repo)
+
+* `src/gmshapi.h` (already shipped with this repo)
+
+* `share/help/gmshapi.md`
+
 4\. Navigate to `morpho-gmsh`
 
 5\. Build the extension by running the following:
@@ -34,3 +42,20 @@ Morpho bindings for the Gmsh API
     cd examples
     morpho6 testgmshapi.morpho
 
+For help with the high-level `gmsh` module, see [the gmsh help](./share/help/gmsh.md), or, in the Morpho CLI, type
+
+    >?gmsh
+
+or 
+
+    >help gmsh
+
+To access the API reference from within the Morpho CLI, type
+
+    >?gmshapi
+
+or 
+
+    >help gmshapi
+
+or see the newly generated [gmshapi help](./share/help/gmshapi.md).

@@ -3,16 +3,19 @@ import meshtools
 import plot 
 
 class GmshLoader {
-    init(...varg) {
+    init(filename) {
         if (gmshIsInitialized()==0) gmshInitialize(0,0,0)
-        if (varg.count()==1) {
-            print "Opening file ${varg[0]}..."
-            gmshOpen(varg[0])
+        if (filename.split(".")[-1]=="msh") {
+            print "Opening file ${filename}..."
+            gmshOpen(filename)
         }
+        // To-do: Add a way to open a Morpho .mesh file in Gmsh
     }
+
     launch() {
         gmshFltkRun()
     }
+    
     buildMorphoMesh() {
 
         var out = gmshModelMeshGetNodes(-1, //const int dim,
