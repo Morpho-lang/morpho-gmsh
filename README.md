@@ -15,7 +15,7 @@ Morpho bindings for the Gmsh API
 
 3\. In [apigenerator/generate.py](./apigenerator/generate.py), set the correct version of gmsh that you have downloaded, and run the file.
 
-This download `apigenerator/CMakeLists.txt` (the Gmsh CMakeLists file) and `apigenerator/api/gen.py`. In addition, it should generate 3 files:
+This downloads `apigenerator/CMakeLists.txt` (the Gmsh CMakeLists file) and `apigenerator/api/gen.py`. In addition, it should generate 3 files:
 
 * `src/gmshapi.c` (already shipped with this repo)
 
@@ -58,4 +58,4 @@ or
 
     >help gmshapi
 
-or see the newly generated [gmshapi help](./share/help/gmshapi.md).
+or see the newly generated `gmshapi` help under [share/help](./share/help/).
