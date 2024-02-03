@@ -744,10 +744,6 @@ class API:
                 c_namespace += module.name[0].upper() + module.name[1:]
             else:
                 c_namespace = module.name
-            keepmodules = ["gmsh", "model", "fltk", "mesh", "geo", "occ", "option"]
-            # if module.name not in keepmodules:
-            #     # print(f"Skipping module {module.name}...")
-            #     return
             
             for rtype, name, args, doc, special in module.fs:
                 # *c.h
@@ -774,16 +770,40 @@ class API:
                 
                 fname = c_namespace + name[0].upper() + name[1:]
                 fnameapi = fname + "("
-                # fnamemorpho = c_namespace[4:] + name[0].upper() + name[1:]
                 fnamemorpho = "Morpho" + fname[0].upper() + fname[1:]
                 method_names.append(fnamemorpho)
-                # self.fwrite(
-                #     f,
-                #     "\n/* " + "\n * ".join(textwrap.wrap(doc, 75)) + " */\n")
                 self.fwrite(f, "\n\n")
+                # Write help for this function to the hlp file
                 self.fwrite(hlp, f"## {fname}\n")
                 self.fwrite(hlp, f"[tag{fname}]: # ({fname})\n\n")
+                # Add call signature
+                self.fwrite(hlp, f"Call signature:\n")
+                morpho_call_signature = fnameapi + (", ").join(
+                    list((a.morpho for a in iargs ))) + ")\n"
+                self.fwrite(hlp, morpho_call_signature + "\n")
+                # Add arguments
+                if (len(iargs)>0):
+                    self.fwrite(hlp, "Arguments:\n")
+                    for iarg in iargs:
+                        morpho_type = iarg.texi_type.replace("vector", "List")
+                        self.fwrite(hlp, f"{iarg.name} ({morpho_type})\n")
+                    # Add new line
+                    self.fwrite(hlp, "\n")
+                # Add returns
+                self.fwrite(hlp, "Returns:\n")
+                if len(oargs)==0 and not rtype:
+                    self.fwrite(hlp, f"nil\n")
+                elif len(oargs)==0 and rtype:
+                    morpho_type = rtype.texi_type.replace("vector", "List")
+                    self.fwrite(hlp, f"{morpho_type}\n")
+                for oarg in oargs:
+                    morpho_type = oarg.texi_type.replace("vector", "List")
+                    self.fwrite(hlp, f"{oarg.name} ({morpho_type})\n")
+                # Add new line 
+                self.fwrite(hlp, "\n")
+                # Add description
                 self.fwrite(hlp, "\n".join(textwrap.wrap(processForMD(doc), 75)) + "\n\n")
+
                 fnamemorphoapi = "value " + fnamemorpho \
                            + "(vm* v, int nargs, value* args) {\n"
                 self.fwrite(f, fnamemorphoapi)
