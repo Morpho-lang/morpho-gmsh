@@ -542,7 +542,8 @@ class Module:
         self.submodules.append(module)
         return module
 
-
+# The footer for the C file which contains the finalization function..
+# Here, we check if Gmsh is initialized and then finalize it.
 cmorpho_footer = """
 void {0}_finalize(void) {{ 
     int ierr;
@@ -553,6 +554,7 @@ void {0}_finalize(void) {{
 }}
 """.format(EXTENSION_NAME)
 
+# To-do: The checkers for double are obsolete since Morpho already has those, so we need to remove this code, but we can keep them for now.
 cmorpho_helpers = """
 bool morpho_is_double(value arg) {
     return (MORPHO_ISINTEGER(arg) || MORPHO_ISFLOAT(arg));
@@ -633,6 +635,7 @@ cmorpho_header = """
 
 """.format(EXTENSION_NAME)
 
+# Common beginning of the Header file. Here, we declare two errors that will be raised when either the number of arguments or the type of arguments is incorrect.
 hmorpho_header = """
 #include <stdio.h>
 #include <morpho/morpho.h>
@@ -644,10 +647,12 @@ hmorpho_header = """
 #define GMSH_ARGS_ERROR "GmshArgsErr"
 #define GMSH_ARGS_ERROR_MSG "Incorrect type of argument for Gmsh function. Check the help for this function."
 """
+
 cmorpho_error_def = """
     morpho_defineerror(GMSH_NARGS_ERROR, ERROR_HALT, GMSH_NARGS_ERROR_MSG);
     morpho_defineerror(GMSH_ARGS_ERROR, ERROR_HALT, GMSH_ARGS_ERROR_MSG);
 """
+
 morpho_help_header = """
 [comment]: # ({0} help)
 [version]: # (0.6)
@@ -657,7 +662,12 @@ morpho_help_header = """
 """.format(EXTENSION_NAME[0].upper() + EXTENSION_NAME[1:]) 
 
 def processForMD(string):
+    '''
+    Method to process a the Python docstring for Markdown. 
+    So far, it just replaces "'" with "`".
+    '''
     return string.replace("'", "`")
+
 def capi(s):
     return s[:1].upper() + s[1:]
 
@@ -717,11 +727,10 @@ class API:
         This method is actually `write_morpho`, but is named `write_python` so that 
         we can run `gen.py` directly without modification.
         """
-        i_names = dict()
-        o_names = dict()
+
         method_names = []
 
-        def capture_list_of_outputs(oargs):
+        def collect_list_of_outputs(oargs):
             l = INDENTL1 + f"value outval[{len(oargs)}];\n" 
             for j, oarg in enumerate(oargs):
                 l += INDENTL1 + f"outval[{j}] = MORPHO_OBJECT({oarg.morpho_object});\n" 
@@ -739,12 +748,18 @@ class API:
             self.fwrite(f, l)
 
         def write_module(module, c_namespace):
-            
+            '''
+            write_module(module, c_namespace)
+
+            This function writes a given module to the C file `../../src/gmshapi.c` as well as the Morpho inline help file `../../share/help/gmshapi.md`
+            It will write all the methods in the given module, and then call itself recursively for all the submodules of the given module.
+            '''
             if c_namespace:
                 c_namespace += module.name[0].upper() + module.name[1:]
             else:
                 c_namespace = module.name
             
+            # Write all the methods in this module
             for rtype, name, args, doc, special in module.fs:
                 # *c.h
                 if name=="importShapesNativePointer":
@@ -755,25 +770,23 @@ class API:
                     # To-do: Handle isizefun to be able to use this function.
                     # Skipping for now...
                     continue
+
+                # Get the input and output arguments
                 iargs = list(a for a in args if not a.out)
                 oargs = list(a for a in args if a.out)
                 if len(oargs)>0 and rtype:
                     # To-do: Handle this case where both rtype and oargs present.
                     # Skipping for now...
                     return
-
-                for iarg in iargs:
-                    i_names[iarg.c_type] = True
-                for oarg in oargs:
-                    # print(oarg)
-                    o_names[oarg.c_type] = True
                 
-                fname = c_namespace + name[0].upper() + name[1:]
-                fnameapi = fname + "("
-                fnamemorpho = "Morpho" + fname[0].upper() + fname[1:]
-                method_names.append(fnamemorpho)
-                self.fwrite(f, "\n\n")
-                # Write help for this function to the hlp file
+                # Get the name of the method
+                fname = c_namespace + name[0].upper() + name[1:] # This is how the method is called in C
+                fnameapi = fname + "(" # Add the opening bracket for the call signature
+                fnamemorpho = "Morpho" + fname[0].upper() + fname[1:] # This is how the veneer function will be called in C. Note that we will ultimately call the function with the original C name (`fname`) from Morpho. This is just a veneer function and its name doesn't matter.
+
+                method_names.append(fnamemorpho) # Add the veneer function to the list of method names, to be used later to define their calling names in the Header file as well as initializing in the C file.
+                
+                ### Write help for this function to the hlp file ###
                 self.fwrite(hlp, f"## {fname}\n")
                 self.fwrite(hlp, f"[tag{fname}]: # ({fname})\n\n")
                 # Add call signature
@@ -803,64 +816,103 @@ class API:
                 self.fwrite(hlp, "\n")
                 # Add description
                 self.fwrite(hlp, "\n".join(textwrap.wrap(processForMD(doc), 75)) + "\n\n")
+                
+                ##############################
 
+                ### Write the veneer function to the C file ###
+                self.fwrite(f, "\n\n")
+
+                # Initialize the veneer function
                 fnamemorphoapi = "value " + fnamemorpho \
                            + "(vm* v, int nargs, value* args) {\n"
                 self.fwrite(f, fnamemorphoapi)
+                # Add in code to check the number of arguments
                 nargsCheck = INDENTL1 + f"if (nargs != {len(iargs)})"+ " {\n" \
                            + INDENTL2 + "morpho_runtimeerror(v, GMSH_NARGS_ERROR);\n" \
                            + INDENTL2 + "return MORPHO_NIL;\n" \
                            + INDENTL1 + "} \n"
                 self.fwrite(f, nargsCheck)
+
+                # Capture all the inputs
                 for i,iarg in enumerate(iargs):
                     self.fwrite(f, iarg.capture_input(i))
                     
+                # Initialize the outputs 
                 for i,oarg in enumerate(oargs):
                     self.fwrite(f, oarg.init_output())
 
+                # Create the C function call
                 self.fwrite(f, INDENTL1 + "int ierr;\n")
                 fn_call = fnameapi + (",\n" + ' ' * len(fnameapi + INDENTL1)).join(
                         list((a.morpho for a in args + (oint("ierr"), )))) + ");\n"
+                
+                # If the function returns something, modify the function call to capture it
                 if rtype:
                     fn_call = f"{rtype.rc_type} outval = " + fn_call
+                
+                # Write the function call
                 self.fwrite(f, INDENTL1 + fn_call)
-                if len(oargs)==0 and not rtype:
+                
+                # Write the return statement (Note that we have already skipped the case where both rtype and oargs are present, so we don't need to account for that here.)
+                if len(oargs)==0 and not rtype: ## If there's nothing to return, return MORPHO_NIL
                     self.fwrite(f, INDENTL1 + "return MORPHO_NIL;\n")
-                elif len(oargs)==0 and rtype:
+                elif len(oargs)==0 and rtype: ## If there are no outputs, but the function returns something, return the value
                     self.fwrite(f, INDENTL1 + f"return {rtype.cToMorphoConverter}(outval);\n")
-                for oarg in oargs:
+                for oarg in oargs: ## If there are outputs, we need to first capture them as Morpho values.
                     self.fwrite(f, oarg.capture_output())
-                if (len(oargs)==1):
+                if (len(oargs)==1): ## If there's only one output, return it
                     self.fwrite(f, oargs[0].return_output())
-                elif (len(oargs)>1):
-                    capture_list_of_outputs(oargs)
+                elif (len(oargs)>1): ## If there are multiple outputs, collect them in a Morpho List and return it
+                    collect_list_of_outputs(oargs)
                     return_list_of_outputs()
-                    
+                
                 self.fwrite(f, "}")
+            
+            # Recursively write all the submodules
             for m in module.submodules:
                 write_module(m, c_namespace)
 
         self.current_lineno = 1
+        # Simultanously open the C file and the help file as we need to add the methods one by one
         with open("../src/" + f"{EXTENSION_NAME}.c", "w") as f, \
              open("../share/help/" + f"{EXTENSION_NAME}.md", "w") as hlp:
+            # Write the header for the Help file
             self.fwrite(hlp, morpho_help_header)
             self.fwrite(hlp, "\n")
+            # Write the description of Gmsh to the Help file
             self.fwrite(hlp, "\n".join(textwrap.wrap(self.description, 80)) + "\n \n")
+            # Code to indicate the inline help to display the subtopics when the user types `help gmshapi` in the Morpho REPL
+            # To-do: Currently, *all* the methods fall under `gmshapi`'s subtopics, whereas it would be nice if the help is also organized by the submodules. We need to add this functionality.
             self.fwrite(hlp, "[showsubtopics]: # (subtopics)\n\n")
 
+            # Write the header for the C file
             self.fwrite(f, cmorpho_header)
+            # Write the helper functions 
             self.fwrite(f, cmorpho_helpers)
+            # Write all the modules. The `write_module` function will write to both the C and the Help file.
             for module in self.modules:
                 write_module(module, "")
             
+            # Write the footer for the C file
+            # Write the initialize method
             self.fwrite(f, "\nvoid " + f"{EXTENSION_NAME}_initialize(void) " + "{\n")
+            # Add all the functions
             for method in method_names:
+                # The constant `{method.upper()}_FUNCTION` will be defined in the header file below
                 self.fwrite(f, INDENTL1 + f"builtin_addfunction({method.upper()}_FUNCTION, {method}, BUILTIN_FLAGSEMPTY);\n")
+            # Add the error definitions.
+            # To-do: Currently, there are only two errors: One for incorrect number of arguments and one for incorrect type of arguments. We need to add more specific and helpful error messages for each function.
             self.fwrite(f, cmorpho_error_def)
             self.fwrite(f, "\n}\n")
+            # Write the finalize method
             self.fwrite(f, cmorpho_footer)
+        
+        # Now, write the header file
         with open("../src/" + f"{EXTENSION_NAME}.h", "w") as fh:
             self.fwrite(fh, hmorpho_header)
             self.fwrite(fh, "\n")
             for method in method_names:
-                self.fwrite(fh, f"#define {method.upper()}_FUNCTION \"{method[6].lower()+method[7:]}\"\n") # Don't want Morpho in the name of the front facing functions
+                self.fwrite(fh, f"#define {method.upper()}_FUNCTION \"{method[6].lower()+method[7:]}\"\n") # Don't want Morpho in the name of the front facing functions. This will convert, say, `MorphoGmshInitialize` to `gmshInitialize`, so that the user can call `gmshInitialize` from the Morpho REPL.
+        
+        # And that's it! We have written the C file and the header file. The help file is also written.
+                
