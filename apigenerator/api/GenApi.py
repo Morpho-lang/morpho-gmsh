@@ -792,7 +792,7 @@ class API:
                 # Add call signature
                 self.fwrite(hlp, f"Call signature:\n")
                 morpho_call_signature = fnameapi + (", ").join(
-                    list((a.morpho for a in iargs ))) + ")\n"
+                    list((a.name for a in iargs ))) + ")\n"
                 self.fwrite(hlp, morpho_call_signature + "\n")
                 # Add arguments
                 if (len(iargs)>0):
