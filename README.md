@@ -59,3 +59,7 @@ or
     >help gmshapi
 
 or see the newly generated `gmshapi` help under [share/help](./share/help/).
+
+## Design
+
+The design of this extension is documented [here](https://joshichaitanya3.github.io/gmsh-design-docs/).
