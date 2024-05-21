@@ -1,7 +1,7 @@
-# This is a version of the Gmsh API generation file 
+# This is a version of the Gmsh API generation file
 # https://gitlab.onelab.info/gmsh/gmsh/blob/master/api/GenApi.py
 # adpoted for the purpose of generating (partial) bindings for the Morpho language
-# https://github.com/Morpho-lang/morpho from the 
+# https://github.com/Morpho-lang/morpho from the
 # Gmsh API definitions file:
 # https://gitlab.onelab.info/gmsh/gmsh/blob/master/api/gen.py
 
@@ -12,16 +12,16 @@
 #
 # Modifications for Morpho by Chaitanya Joshi (chaitanyajoshi.usa@gmail.com)
 
-# Morpho is written in C, so it's easiest to use Gmsh's C-API. 
+# Morpho is written in C, so it's easiest to use Gmsh's C-API.
 # This API generator will essentially wrap the C function calls as Morpho function calls with appropriate modifications to the inputs and outputs.
 
 # Currently skips the following functions:
 # 1. gmshModelMeshSetSizeCallback (Handling of the isizefun class is not implemented yet)
 # 2. gmshModelOccImportShapesNativePointer (Handling of the ivectorstar class is not implemented yet)
 # 3. gmshFltkSelectEntities (and other future C functions that have both a non-void return type and return something via assigning to pointers, as this case is not handled yet.)
-  
-# The design of this Morpho-specific binding was improved by 
-# inspirations from a Haskell Binding to the Gmsh API 
+
+# The design of this Morpho-specific binding was improved by
+# inspirations from a Haskell Binding to the Gmsh API
 # by Antero Marjamäki : https://github.com/Ehtycs/haskell-gmsh/
 
 # Gmsh API generator for Morpho-lang. By Chaitanya Joshi
@@ -35,13 +35,13 @@ INDENTL2 = "        "
 INDENTL3 = "            "
 EXTENSION_NAME = "gmshapi"
 # Removing all the Python, Julia and Fortran related attributes, but
-# keeping the function call signatures the same in order to use gen.py 
+# keeping the function call signatures the same in order to use gen.py
 # without editing.
 class arg:
     """ Basic datatype of an argument. Every datatype inherits this constructor
     and also default behaviour from here.
-    
-    Compared to the original, this object only stores the C-related information (to actually call the C-API functions) and Morpho-specific information. 
+
+    Compared to the original, this object only stores the C-related information (to actually call the C-API functions) and Morpho-specific information.
 
     Subclasses of this constructor will have methods for processing inputs/outputs, etc.
 
@@ -62,8 +62,8 @@ class arg:
         self.texi_type = ""
         self.texi = name + ""
         # self.morpho will be used in place of self.c while calling the C-API functions, since the inputs will be slightly different while calling from the Morpho wrappers.
-        self.morpho = name 
-        # self.morpho_object specifies how to name the Morpho Objects corresponding to the args. For instance, a string would have morpho_object as name + "_str", so that it is declared as `objectstring * name_str = ...` 
+        self.morpho = name
+        # self.morpho_object specifies how to name the Morpho Objects corresponding to the args. For instance, a string would have morpho_object as name + "_str", so that it is declared as `objectstring * name_str = ...`
         self.morpho_object = name
 
 class inputArg(arg):
@@ -87,30 +87,30 @@ class inputArg(arg):
 
         Generates C-code to check the (i+1)th input argument to the Morpho function and convert it to an appropriate C-type.
         """
-        
+
         # Here, we check for a single object as defualt, which can be reused for anything that's not a list: `iint`, `idouble, `istring`, etc.
         chk = INDENTL1 + f"if (!{self.morphoTypeCheker}(MORPHO_GETARG(args, {i}))) " + self.runTimeErr
         inp = INDENTL1 + f"{self.c_type} {self.name} = {self.morphoToCConverter}(MORPHO_GETARG(args, {i})); \n"
         return chk + inp
 
 # input types
-    
+
 # iint, isize and ibool, all need the same morphoTypeChecker and morphoToCConverter.
 class iint(inputArg):
     def __init__(self, name, value=None, python_value=None, julia_value=None, cpp_type="const int", c_type="const int", out=False):
         super().__init__(name, value, python_value, julia_value, cpp_type, c_type, out)
         self.texi_type = "integer"
-    
+
 
 class isize(inputArg):
-    def __init__(self, name, value=None, python_value=None, julia_value=None, 
+    def __init__(self, name, value=None, python_value=None, julia_value=None,
                  cpp_type="const std::size_t", c_type="const size_t", out=False):
         super().__init__(name, value, python_value, julia_value, cpp_type, c_type, out)
         self.texi_type = "size"
-        
-    
+
+
 class ibool(inputArg):
-    def __init__(self, name, value=None, python_value=None, julia_value=None, 
+    def __init__(self, name, value=None, python_value=None, julia_value=None,
                  cpp_type="const bool", c_type="const int", out=False):
         super().__init__(name, value, python_value, julia_value, cpp_type, c_type, out)
         self.texi_type = "boolean"
@@ -132,7 +132,7 @@ class istring(inputArg):
         self.morphoToCConverter = "MORPHO_GETCSTRING"
 
 # Haven't implemented this one yet, but it isn't required for the modules currently implemented.
-# To-do: Figure out how to handle this one. 
+# To-do: Figure out how to handle this one.
 def ivoidstar(name, value=None, python_value=None, julia_value=None):
     a = arg(name, value, python_value, julia_value, "const void *",
             "const void *", False)
@@ -142,7 +142,7 @@ def ivoidstar(name, value=None, python_value=None, julia_value=None):
 # Now we begin the vector inputs, that will require different `capture_input` methods.
 # We will first define the ivectorint type and will inherit from it for the rest of the input vectors
 class ivectorint(inputArg):
-    
+
     def __init__(self, name, value=None, python_value=None, julia_value=None, cpp_type="const std::vector<int> &", c_type="const int *", out=False):
         super().__init__(name, value, python_value, julia_value, cpp_type, c_type, out)
         self.c = "const int * " + self.name + ", const size_t " + self.name + "_n"
@@ -151,12 +151,12 @@ class ivectorint(inputArg):
         # Since the vector inputs are all going to be Morpho Lists, we don't need to specify `morphoTypeChecker` and `morphoToCConverter`. Instead, we need the C-types for the arrays of inputs and functions to get them from Morpho Lists, as seen below.
         self.inputListType = "int" # will initialize an `int name[length]; // list`
         self.toListFunction = "morphoGetIntStarFromList" # Function to get an int * from a Morpho List (defined in this file).
-        
+
     def capture_input(self, i):
         """
         capture_input(i)
 
-        Generates C-code to check the (i+1)th input argument to the Morpho function and convert it to an appropriate C-type. 
+        Generates C-code to check the (i+1)th input argument to the Morpho function and convert it to an appropriate C-type.
 
         Since this is a list, we first check whether the input is a Morpho List, then create an C array and call a function to pull the Morpho List elements into this array.
         """
@@ -171,7 +171,7 @@ class ivectorpair(ivectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None, cpp_type="const gmsh::vectorpair &", c_type="const int *", out=False):
         super().__init__(name, value, python_value, julia_value, cpp_type, c_type, out)
         self.texi_type = "vector of pairs of integers"
-    
+
 class ivectorsize(ivectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None, cpp_type="const std::vector<std::size_t> &", c_type="const size_t *", out=False):
         super().__init__(name, value, python_value, julia_value, cpp_type, c_type, out)
@@ -203,10 +203,10 @@ class ivectorstring(ivectorint):
 # We will first define the ivectorvectorint as a prototype
 class ivectorvectorint(ivectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None,
-                 cpp_type="const std::vector<std::vector<int> > &", 
+                 cpp_type="const std::vector<std::vector<int> > &",
                  c_type="const int * const *", out=False):
         super().__init__(name, value, python_value, julia_value, cpp_type, c_type, out)
-    
+
         self.c = ("const int * const * " + self.name + ", const size_t * " + self.name + "_n, " +
             "const size_t " + self.name + "_nn")
         self.texi_type = "vector of vectors of integers"
@@ -216,7 +216,7 @@ class ivectorvectorint(ivectorint):
         """
         capture_input(i)
 
-        Generates C-code to check the (i+1)th input argument to the Morpho function and convert it to an appropriate C-type. 
+        Generates C-code to check the (i+1)th input argument to the Morpho function and convert it to an appropriate C-type.
 
         Similar to the one for lists, but modified to capture list of lists.
         """
@@ -233,8 +233,8 @@ class ivectorvectorint(ivectorint):
     for (size_t i=0; i<{2}_nn; i++) {{
         {2}_success = ({2}_success && list_getelement({2}_list, i, &{2}_elI));
         if (!MORPHO_ISLIST({2}_elI)) {{
-            morpho_runtimeerror(v, GMSH_ARGS_ERROR); 
-            return MORPHO_NIL; 
+            morpho_runtimeerror(v, GMSH_ARGS_ERROR);
+            return MORPHO_NIL;
         }}
         {2}_li = MORPHO_GETLIST({2}_elI);
         {2}_n[i] = (size_t) list_length({2}_li);
@@ -269,13 +269,21 @@ class ivectorvectordouble(ivectorvectorint):
 
 class outputArg(arg):
     """
-    Basic datatype for an output argument, inherited from `arg`. 
-    Defines some extra methods to process the output. This makes sure that
-    the methods below exist even for simple outputs that don't require some of them.
+    Basic datatype for an output argument, inherited from `arg`.
+    Defines some extra methods to process the output.
     """
-    def capture_output(self):
-        return "" 
 
+    # Initialize pointers to the outputs so that they can be passed to the gmsh C functions.
+    def init_output(self):
+        return str("")
+
+    # Capture the outputs from the C functions into a Morpho value format.
+    def capture_output(self):
+        return str("")
+
+    # Return the captured outputs.
+    def return_output(self):
+        return str("")
 
 class oint(outputArg):
     rc_type = "int"
@@ -288,13 +296,13 @@ class oint(outputArg):
         self.morpho = "&" + self.name
         self.elementType = "int"
         self.cToMorphoConverter = "MORPHO_INTEGER"
-    
+
     def init_output(self):
-        
-        return INDENTL1 + f"{self.elementType} {self.name};\n" 
-    
+
+        return INDENTL1 + f"{self.elementType} {self.name};\n"
+
     def return_output(self):
-        
+
         return INDENTL1 + f"return {self.cToMorphoConverter}({self.name});\n"
 
 class osize(oint):
@@ -308,9 +316,9 @@ class osize(oint):
         self.morpho = "&" + self.name
         self.elementType = "size_t"
         self.cToMorphoConverter = "MORPHO_INTEGER"
-    
+
     def return_output(self):
-        
+
         return INDENTL1 + f"return {self.cToMorphoConverter}((int) {self.name});\n"
 
 
@@ -339,7 +347,7 @@ class ostring(oint):
 
     def capture_output(self):
         return INDENTL1 + f"value {self.name}_value = object_stringfromcstring({self.name}, strlen({self.name}));\n" \
-             + INDENTL1 + f"objectstring* {self.morpho_object} = MORPHO_GETSTRING({self.name}_value);\n" 
+             + INDENTL1 + f"objectstring* {self.morpho_object} = MORPHO_GETSTRING({self.name}_value);\n"
 
     def return_output(self):
         return INDENTL1 + "value out;\n" \
@@ -347,8 +355,8 @@ class ostring(oint):
              + INDENTL2 + f"out = MORPHO_OBJECT({self.morpho_object});\n" \
              + INDENTL2 + f"morpho_bindobjects(v, 1, &out);\n" \
              + INDENTL1 + "}\n" \
-             + INDENTL1 + "return out;\n" 
-    
+             + INDENTL1 + "return out;\n"
+
 class ovectorint(oint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self, name, value, python_value, julia_value, "std::vector<int> &",
@@ -359,7 +367,7 @@ class ovectorint(oint):
         self.morpho_object = self.name + "_list"
         self.elementType = "int"
         self.cToMorphoConverter = "MORPHO_INTEGER"
-    
+
     def init_output(self):
         return INDENTL1 \
                 + f"{self.elementType}* {self.name};\n" \
@@ -371,7 +379,7 @@ class ovectorint(oint):
              + INDENTL1 + f"for (size_t j=0; j<{self.name}_n; j++) " +"{ \n" \
              + INDENTL2 + f"{self.name}_value[j] = {self.cToMorphoConverter}({self.name}[j]);\n" \
              + INDENTL1 + "}\n" \
-             + INDENTL1 + f"objectlist* {self.morpho_object} = object_newlist((int) {self.name}_n, {self.name}_value);\n" 
+             + INDENTL1 + f"objectlist* {self.morpho_object} = object_newlist((int) {self.name}_n, {self.name}_value);\n"
 
     def return_output(self):
         return INDENTL1 + "value out;\n" \
@@ -379,10 +387,10 @@ class ovectorint(oint):
              + INDENTL2 + f"out = MORPHO_OBJECT({self.name}_list);\n" \
              + INDENTL2 + f"morpho_bindobjects(v, 1, &out);\n" \
              + INDENTL1 + "}\n" \
-             + INDENTL1 + "return out;\n" 
-    
+             + INDENTL1 + "return out;\n"
+
 # ovectorpair has the same init_output as ovectorint
-class ovectorpair(ovectorint, outputArg):
+class ovectorpair(ovectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self,name, value, python_value, julia_value,  "gmsh::vectorpair &",
                 "int **", True)
@@ -393,7 +401,7 @@ class ovectorpair(ovectorint, outputArg):
         self.elementType = "int"
         self.cToMorphoConverter = "MORPHO_INTEGER"
 
-class ovectorsize(ovectorint, outputArg):
+class ovectorsize(ovectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self,name, value, python_value, julia_value,
                 "std::vector<std::size_t> &", "size_t **", True)
@@ -404,7 +412,7 @@ class ovectorsize(ovectorint, outputArg):
         self.elementType = "size_t"
         self.cToMorphoConverter = "MORPHO_INTEGER"
 
-class ovectordouble(ovectorint, outputArg):
+class ovectordouble(ovectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self,name, value, python_value, julia_value, "std::vector<double> &", "double *", True)
         self.c = "double ** " + self.name + ", size_t * " + self.name + "_n"
@@ -414,7 +422,7 @@ class ovectordouble(ovectorint, outputArg):
         self.elementType = "double"
         self.cToMorphoConverter = "MORPHO_FLOAT"
 
-class ovectorstring(ovectorint, outputArg):
+class ovectorstring(ovectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self, name, value, python_value, julia_value,
                 "std::vector<std::string> &", "char **", True)
@@ -424,16 +432,16 @@ class ovectorstring(ovectorint, outputArg):
         self.morpho_object = self.name + "_list"
         self.elementType = "char *"
         self.cToMorphoConverter = "MORPHO_STRING"
-    
+
     def capture_output(self):
         return INDENTL1 + f"value {self.name}_values[(int) {self.name}_n];\n" \
              + INDENTL1 + f"for (size_t j=0; j<{self.name}_n; j++) " +"{ \n" \
              + INDENTL2 + f"{self.name}_values[j] = object_stringfromcstring({self.name}[j], strlen({self.name}[j]));\n" \
              + INDENTL1 + "}\n" \
-             + INDENTL1 + f"objectlist* {self.morpho_object} = object_newlist((int) {self.name}_n, {self.name}_values);\n" 
+             + INDENTL1 + f"objectlist* {self.morpho_object} = object_newlist((int) {self.name}_n, {self.name}_values);\n"
 
 
-class ovectorvectorint(ovectorint, outputArg):
+class ovectorvectorint(ovectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self, name, value, python_value, julia_value,
                 "std::vector<std::vector<int> > &", "int **", True)
@@ -453,7 +461,7 @@ class ovectorvectorint(ovectorint, outputArg):
                 + INDENTL1 \
                 + f"size_t {self.name}_nn;\n"
 
-    def capture_output(self): 
+    def capture_output(self):
         return INDENTL1 + f"objectlist* {self.morpho_object} = object_newlist(0, NULL);\n" \
              + INDENTL1 + f"value {self.name}_value[(int) {self.name}_nn];\n" \
              + INDENTL1 + f"for (size_t i=0; i<{self.name}_nn; i++) " +"{ \n" \
@@ -465,7 +473,7 @@ class ovectorvectorint(ovectorint, outputArg):
              + INDENTL2 + f"list_append({self.morpho_object}, MORPHO_OBJECT({self.morpho_object}_i));" \
              + INDENTL1 + "} \n"
 
-class ovectorvectorpair(ovectorvectorint, outputArg):
+class ovectorvectorpair(ovectorvectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self,name, value, python_value, julia_value,
                 "std::vector<gmsh::vectorpair> &", "int **", True)
@@ -476,7 +484,7 @@ class ovectorvectorpair(ovectorvectorint, outputArg):
         self.elementType = "int"
         self.cToMorphoConverter = "MORPHO_INTEGER"
 
-class ovectorvectorsize(ovectorvectorint, outputArg):
+class ovectorvectorsize(ovectorvectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self, name, value, python_value, julia_value,
                 "std::vector<std::vector<std::size_t> > &", "size_t **", True)
@@ -488,7 +496,7 @@ class ovectorvectorsize(ovectorvectorint, outputArg):
         self.cToMorphoConverter = "MORPHO_INTEGER"
 
 
-class ovectorvectordouble(ovectorvectorint, outputArg):
+class ovectorvectordouble(ovectorvectorint):
     def __init__(self, name, value=None, python_value=None, julia_value=None):
         arg.__init__(self, name, value, python_value, julia_value,
                 "std::vector<std::vector<double> > &", "double **", True)
@@ -512,7 +520,7 @@ class iargcargv(arg):
         self.texi = "(argc = 0)}, @code{argv = []"
         self.texi_type = "command line arguments"
         self.morpho = "0, NULL"
-    
+
     def capture_input(self, i):
         return ""
 
@@ -545,7 +553,7 @@ class Module:
 # The footer for the C file which contains the finalization function..
 # Here, we check if Gmsh is initialized and then finalize it.
 cmorpho_footer = """
-void {0}_finalize(void) {{ 
+void {0}_finalize(void) {{
     int ierr;
     int outval = gmshIsInitialized(&ierr);
     if (outval != 0) {{
@@ -571,7 +579,7 @@ double morpho_get_double(value arg) {
 }
 """
 
-def func_convert_list_to_pointer_array(func_name, pointer_type, element_checker, element_getter): 
+def func_convert_list_to_pointer_array(func_name, pointer_type, element_checker, element_getter):
 
     return """
 void {0}(vm* v, objectlist* l, {1} list) {{
@@ -591,26 +599,26 @@ void {0}(vm* v, objectlist* l, {1} list) {{
 
 }}
 """.format(func_name, pointer_type, element_checker, element_getter)
-    
+
 cmorpho_helpers += func_convert_list_to_pointer_array("morphoGetIntStarFromList",
-                                                      "int *", 
-                                                      "MORPHO_ISINTEGER", 
+                                                      "int *",
+                                                      "MORPHO_ISINTEGER",
                                                       "MORPHO_GETINTEGERVALUE")
 
 cmorpho_helpers += func_convert_list_to_pointer_array("morphoGetSizeTStarFromList",
-                                                      "size_t *", 
-                                                      "MORPHO_ISINTEGER", 
+                                                      "size_t *",
+                                                      "MORPHO_ISINTEGER",
                                                       "MORPHO_GETINTEGERVALUE")
 
 
 cmorpho_helpers += func_convert_list_to_pointer_array("morphoGetDoubleStarFromList",
-                                                      "double *", 
-                                                      "morpho_is_double", 
+                                                      "double *",
+                                                      "morpho_is_double",
                                                       "morpho_get_double")
 
 cmorpho_helpers += func_convert_list_to_pointer_array("morphoGetCharStarStarFromList",
-                                                      "char const **", 
-                                                      "MORPHO_ISSTRING", 
+                                                      "char const **",
+                                                      "MORPHO_ISSTRING",
                                                       "MORPHO_GETCSTRING")
 
 cmorpho_header = """
@@ -659,11 +667,11 @@ morpho_help_header = """
 
 # {0}
 [tag{0}]: # ({0})
-""".format(EXTENSION_NAME[0].upper() + EXTENSION_NAME[1:]) 
+""".format(EXTENSION_NAME[0].upper() + EXTENSION_NAME[1:])
 
 def processForMD(string):
     '''
-    Method to process a the Python docstring for Markdown. 
+    Method to process a the Python docstring for Markdown.
     So far, it just replaces "'" with "`".
     '''
     return string.replace("'", "`")
@@ -724,27 +732,27 @@ class API:
 
     def write_python(self):
         """
-        This method is actually `write_morpho`, but is named `write_python` so that 
+        This method is actually `write_morpho`, but is named `write_python` so that
         we can run `gen.py` directly without modification.
         """
 
         method_names = []
 
         def collect_list_of_outputs(oargs):
-            l = INDENTL1 + f"value outval[{len(oargs)}];\n" 
+            l = INDENTL1 + f"value outval[{len(oargs)}];\n"
             for j, oarg in enumerate(oargs):
-                l += INDENTL1 + f"outval[{j}] = MORPHO_OBJECT({oarg.morpho_object});\n" 
-            l += INDENTL1 + f"objectlist* outlist = object_newlist({len(oargs)}, outval);\n" 
+                l += INDENTL1 + f"outval[{j}] = MORPHO_OBJECT({oarg.morpho_object});\n"
+            l += INDENTL1 + f"objectlist* outlist = object_newlist({len(oargs)}, outval);\n"
             self.fwrite(f, l)
             return
-        
+
         def return_list_of_outputs():
             l = INDENTL1 + "value out;\n" \
               + INDENTL1 + f"if (outlist) " + "{\n" \
               + INDENTL2 + f"out = MORPHO_OBJECT(outlist);\n" \
               + INDENTL2 + f"morpho_bindobjects(v, 1, &out);\n" \
               + INDENTL1 + "}\n" \
-              + INDENTL1 + "return out;\n" 
+              + INDENTL1 + "return out;\n"
             self.fwrite(f, l)
 
         def write_module(module, c_namespace):
@@ -758,7 +766,7 @@ class API:
                 c_namespace += module.name[0].upper() + module.name[1:]
             else:
                 c_namespace = module.name
-            
+
             # Write all the methods in this module
             for rtype, name, args, doc, special in module.fs:
                 # *c.h
@@ -778,14 +786,14 @@ class API:
                     # To-do: Handle this case where both rtype and oargs present.
                     # Skipping for now...
                     return
-                
+
                 # Get the name of the method
                 fname = c_namespace + name[0].upper() + name[1:] # This is how the method is called in C
                 fnameapi = fname + "(" # Add the opening bracket for the call signature
                 fnamemorpho = "Morpho" + fname[0].upper() + fname[1:] # This is how the veneer function will be called in C. Note that we will ultimately call the function with the original C name (`fname`) from Morpho. This is just a veneer function and its name doesn't matter.
 
                 method_names.append(fnamemorpho) # Add the veneer function to the list of method names, to be used later to define their calling names in the Header file as well as initializing in the C file.
-                
+
                 ### Write help for this function to the hlp file ###
                 self.fwrite(hlp, f"## {fname}\n")
                 self.fwrite(hlp, f"[tag{fname}]: # ({fname})\n\n")
@@ -812,11 +820,11 @@ class API:
                 for oarg in oargs:
                     morpho_type = oarg.texi_type.replace("vector", "List")
                     self.fwrite(hlp, f"{oarg.name} ({morpho_type})\n")
-                # Add new line 
+                # Add new line
                 self.fwrite(hlp, "\n")
                 # Add description
                 self.fwrite(hlp, "\n".join(textwrap.wrap(processForMD(doc), 75)) + "\n\n")
-                
+
                 ##############################
 
                 ### Write the veneer function to the C file ###
@@ -836,8 +844,8 @@ class API:
                 # Capture all the inputs
                 for i,iarg in enumerate(iargs):
                     self.fwrite(f, iarg.capture_input(i))
-                    
-                # Initialize the outputs 
+
+                # Initialize the outputs
                 for i,oarg in enumerate(oargs):
                     self.fwrite(f, oarg.init_output())
 
@@ -845,14 +853,14 @@ class API:
                 self.fwrite(f, INDENTL1 + "int ierr;\n")
                 fn_call = fnameapi + (",\n" + ' ' * len(fnameapi + INDENTL1)).join(
                         list((a.morpho for a in args + (oint("ierr"), )))) + ");\n"
-                
+
                 # If the function returns something, modify the function call to capture it
                 if rtype:
                     fn_call = f"{rtype.rc_type} outval = " + fn_call
-                
+
                 # Write the function call
                 self.fwrite(f, INDENTL1 + fn_call)
-                
+
                 # Write the return statement (Note that we have already skipped the case where both rtype and oargs are present, so we don't need to account for that here.)
                 if len(oargs)==0 and not rtype: ## If there's nothing to return, return MORPHO_NIL
                     self.fwrite(f, INDENTL1 + "return MORPHO_NIL;\n")
@@ -865,9 +873,9 @@ class API:
                 elif (len(oargs)>1): ## If there are multiple outputs, collect them in a Morpho List and return it
                     collect_list_of_outputs(oargs)
                     return_list_of_outputs()
-                
+
                 self.fwrite(f, "}")
-            
+
             # Recursively write all the submodules
             for m in module.submodules:
                 write_module(m, c_namespace)
@@ -887,12 +895,12 @@ class API:
 
             # Write the header for the C file
             self.fwrite(f, cmorpho_header)
-            # Write the helper functions 
+            # Write the helper functions
             self.fwrite(f, cmorpho_helpers)
             # Write all the modules. The `write_module` function will write to both the C and the Help file.
             for module in self.modules:
                 write_module(module, "")
-            
+
             # Write the footer for the C file
             # Write the initialize method
             self.fwrite(f, "\nvoid " + f"{EXTENSION_NAME}_initialize(void) " + "{\n")
@@ -906,13 +914,12 @@ class API:
             self.fwrite(f, "\n}\n")
             # Write the finalize method
             self.fwrite(f, cmorpho_footer)
-        
+
         # Now, write the header file
         with open("../src/" + f"{EXTENSION_NAME}.h", "w") as fh:
             self.fwrite(fh, hmorpho_header)
             self.fwrite(fh, "\n")
             for method in method_names:
                 self.fwrite(fh, f"#define {method.upper()}_FUNCTION \"{method[6].lower()+method[7:]}\"\n") # Don't want Morpho in the name of the front facing functions. This will convert, say, `MorphoGmshInitialize` to `gmshInitialize`, so that the user can call `gmshInitialize` from the Morpho REPL.
-        
+
         # And that's it! We have written the C file and the header file. The help file is also written.
-                
