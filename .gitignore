@@ -226,7 +226,6 @@ cython_debug/
 
 apigenerator/api/gen.py 
 apigenerator/CMakeLists.txt
-share/help/gmshapi.md 
 docs/
 # local quick-build scripts
 *.sh
